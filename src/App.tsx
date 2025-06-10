@@ -35,6 +35,14 @@ interface AffectedHost {
   lastSeen: Date;
 }
 
+interface QuickAction {
+  id: string;
+  label: string;
+  command: string;
+  type: 'danger' | 'warning' | 'primary';
+  icon?: string;
+}
+
 const INITIAL_ALERT: Alert = {
   id: '123',
   title: 'POTENTIAL MALWARE OUTBREAK',
@@ -60,6 +68,45 @@ const INITIAL_MESSAGES: Message[] = [
     type: 'ai',
     content: 'CYBERMESH ALERT: **CRITICAL - Potential Malware Outbreak (50+ hosts)** detected. Anomalous outbound connections to `172.24.1.250`. Process `svchost_mal.exe` identified. Immediate investigation required.',
     timestamp: new Date(),
+  }
+];
+
+const QUICK_ACTIONS: QuickAction[] = [
+  {
+    id: '1',
+    label: 'Block C2 IP 172.24.1.250',
+    command: 'block ip 172.24.1.250 network-wide',
+    type: 'danger'
+  },
+  {
+    id: '2',
+    label: 'Isolate patient zero WKSTN-HR-01',
+    command: 'isolate host WKSTN-HR-01',
+    type: 'warning'
+  },
+  {
+    id: '3',
+    label: 'Show outbreak origin analysis',
+    command: 'show origin of outbreak',
+    type: 'primary'
+  },
+  {
+    id: '4',
+    label: 'Extract IOCs for alert 123',
+    command: 'ioc for alert 123',
+    type: 'primary'
+  },
+  {
+    id: '5',
+    label: 'Start automated remediation',
+    command: 'start automated remediation playbook',
+    type: 'primary'
+  },
+  {
+    id: '6',
+    label: 'List all affected hosts',
+    command: 'list affected hosts',
+    type: 'primary'
   }
 ];
 
@@ -127,6 +174,11 @@ function App() {
       setMessages(prev => [...prev, aiResponse]);
       setIsTyping(false);
     }, 1500);
+  };
+
+  const handleQuickAction = (command: string) => {
+    setInputValue(command);
+    inputRef.current?.focus();
   };
 
   const generateAIResponse = (userInput: string): Message => {
@@ -277,6 +329,15 @@ function App() {
     }
   };
 
+  const getActionTypeColor = (type: string) => {
+    switch (type) {
+      case 'danger': return 'bg-red-900/40 hover:bg-red-800/50 border-red-500/60 text-red-300 hover:text-red-200';
+      case 'warning': return 'bg-orange-900/40 hover:bg-orange-800/50 border-orange-500/60 text-orange-300 hover:text-orange-200';
+      case 'primary': return 'bg-cyan-900/40 hover:bg-cyan-800/50 border-cyan-500/60 text-cyan-300 hover:text-cyan-200';
+      default: return 'bg-gray-900/40 hover:bg-gray-800/50 border-gray-500/60 text-gray-300 hover:text-gray-200';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-cyan-100 font-mono">
       {/* Animated submarine-style grid background */}
@@ -402,43 +463,6 @@ function App() {
                 </div>
               </div>
             </div>
-
-            {/* Quick Actions Widget */}
-            <div className="bg-gray-800/70 backdrop-blur-sm rounded-xl border-2 border-cyan-500/40 overflow-hidden shadow-2xl shadow-cyan-500/20">
-              <div className="p-4 border-b-2 border-cyan-500/30 bg-gradient-to-r from-cyan-900/30 to-cyan-800/30">
-                <h2 className="text-lg font-bold text-cyan-300 tracking-widest flex items-center justify-between">
-                  <span>QUICK ACTIONS</span>
-                  <Zap className="w-6 h-6 text-cyan-400" />
-                </h2>
-              </div>
-              
-              <div className="p-4 space-y-2">
-                <button 
-                  onClick={() => handleSendMessage('block ip 172.24.1.250 network-wide')}
-                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-lg text-sm font-bold tracking-widest transition-all duration-200 border border-red-500/60 shadow-lg shadow-red-500/30"
-                  style={{ height: '40px', paddingLeft: '12px', textAlign: 'left' }}
-                  disabled={actionInProgress !== null}
-                >
-                  <span style={{ marginLeft: '4px' }}>BLOCK C2 IP</span>
-                </button>
-                
-                <button 
-                  onClick={() => handleSendMessage('isolate host WKSTN-HR-01')}
-                  className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white rounded-lg text-sm font-bold tracking-widest transition-all duration-200 border border-orange-500/60 shadow-lg shadow-orange-500/30"
-                  style={{ height: '40px', paddingLeft: '12px', textAlign: 'left' }}
-                >
-                  <span style={{ marginLeft: '4px' }}>ISOLATE PATIENT ZERO</span>
-                </button>
-                
-                <button 
-                  onClick={() => handleSendMessage('start automated remediation playbook')}
-                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-sm font-bold tracking-widest transition-all duration-200 border border-cyan-500/60 shadow-lg shadow-cyan-500/30"
-                  style={{ height: '40px', paddingLeft: '12px', textAlign: 'left' }}
-                >
-                  <span style={{ marginLeft: '4px' }}>START REMEDIATION</span>
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* Main Console Interface */}
@@ -508,8 +532,25 @@ function App() {
                 </div>
               )}
 
-              {/* Command Input */}
-              <div className="p-6 border-t-2 border-cyan-500/30 bg-gradient-to-r from-gray-900/40 to-gray-800/40">
+              {/* Quick Actions - Suggested Commands */}
+              <div className="px-6 py-4 border-t-2 border-cyan-500/30 bg-gradient-to-r from-gray-900/40 to-gray-800/40">
+                <div className="mb-3">
+                  <h3 className="text-xs font-bold text-cyan-400 tracking-widest mb-2">SUGGESTED ACTIONS</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {QUICK_ACTIONS.map((action) => (
+                      <button
+                        key={action.id}
+                        onClick={() => handleQuickAction(action.command)}
+                        className={`px-3 py-2 rounded-lg text-xs font-medium tracking-wide transition-all duration-200 border backdrop-blur-sm ${getActionTypeColor(action.type)}`}
+                        disabled={isTyping || actionInProgress !== null}
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Command Input */}
                 <div className="flex space-x-4">
                   <div className="flex-1 relative">
                     <input

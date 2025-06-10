@@ -50,20 +50,27 @@ const INITIAL_MESSAGES: Message[] = [
   }
 ];
 
-// Blinking Cursor Component
-const BlinkingCursor = () => {
+// Dynamic Blinking Cursor Component
+const DynamicBlinkingCursor = ({ inputValue }: { inputValue: string }) => {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setVisible(prev => !prev);
-    }, 800); // 0.8s blink rate
+    }, 1000); // 1s on/1s off
 
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <span className={`text-cyan-400 transition-opacity duration-100 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+    <span 
+      className={`text-[#00FF00] transition-opacity duration-100 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      style={{ 
+        position: 'absolute',
+        left: `${inputValue.length * 0.6}ch`,
+        pointerEvents: 'none'
+      }}
+    >
       |
     </span>
   );
@@ -77,6 +84,7 @@ function App() {
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [systemStatus, setSystemStatus] = useState<'secure' | 'threat' | 'investigating'>('threat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -262,10 +270,11 @@ function App() {
           {/* Alert Panel */}
           <div className="lg:col-span-1">
             <div className="bg-gray-800/60 backdrop-blur-sm rounded-xl border border-cyan-500/30 overflow-hidden shadow-2xl shadow-cyan-500/10">
+              {/* Header with icon repositioned to right */}
               <div className="p-6 border-b border-cyan-500/20 bg-gradient-to-r from-red-900/20 to-orange-900/20">
-                <h2 className="text-lg font-bold text-red-300 flex items-center space-x-2 tracking-widest">
-                  <AlertTriangle className="w-5 h-5 text-red-400 animate-pulse" />
+                <h2 className="text-lg font-bold text-red-300 flex items-center justify-between tracking-widest">
                   <span>ACTIVE THREAT</span>
+                  <AlertTriangle className="w-6 h-6 text-red-400 animate-pulse" style={{ marginRight: '16px' }} />
                 </h2>
               </div>
               
@@ -304,26 +313,28 @@ function App() {
                   </div>
                 </div>
 
-                {/* Quick Actions - Matching Active Threat section styling */}
+                {/* Quick Actions - Standardized buttons */}
                 <div className="p-4 rounded-lg border-2 border-cyan-500/30 bg-gradient-to-br from-gray-900/50 to-gray-800/50">
                   <div className="flex justify-between items-start mb-4">
                     <h4 className="font-bold text-sm uppercase tracking-widest text-cyan-300">QUICK ACTIONS</h4>
                   </div>
                   
                   {currentAlert.status === 'active' ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <button 
                         onClick={() => handleActionClick('block')}
-                        className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white px-4 py-3 rounded-lg text-sm font-bold tracking-widest transition-all duration-200 border border-red-500/50 shadow-lg shadow-red-500/25"
+                        className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-lg text-sm font-bold tracking-widest transition-all duration-200 border border-red-500/50 shadow-lg shadow-red-500/25"
+                        style={{ height: '40px', paddingLeft: '12px', textAlign: 'left' }}
                         disabled={actionInProgress !== null}
                       >
-                        TERMINATE & QUARANTINE
+                        <span style={{ marginLeft: '4px' }}>TERMINATE & QUARANTINE</span>
                       </button>
                       <button 
                         onClick={() => handleActionClick('investigate')}
-                        className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-4 py-3 rounded-lg text-sm font-bold tracking-widest transition-all duration-200 border border-cyan-500/50 shadow-lg shadow-cyan-500/25"
+                        className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-sm font-bold tracking-widest transition-all duration-200 border border-cyan-500/50 shadow-lg shadow-cyan-500/25"
+                        style={{ height: '40px', paddingLeft: '12px', textAlign: 'left' }}
                       >
-                        ANALYZE THREAT
+                        <span style={{ marginLeft: '4px' }}>ANALYZE THREAT</span>
                       </button>
                     </div>
                   ) : (
@@ -340,10 +351,11 @@ function App() {
           {/* Chat Interface */}
           <div className="lg:col-span-2">
             <div className="bg-gray-800/60 backdrop-blur-sm rounded-xl border border-cyan-500/30 flex flex-col h-[600px] shadow-2xl shadow-cyan-500/10">
+              {/* Header with icon repositioned to right */}
               <div className="p-6 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-900/20 to-blue-900/20">
-                <h2 className="text-lg font-bold text-cyan-100 flex items-center space-x-2 tracking-widest">
-                  <MessageCircle className="w-5 h-5 text-cyan-400" />
+                <h2 className="text-lg font-bold text-cyan-100 flex items-center justify-between tracking-widest">
                   <span>AI SECURITY INTERFACE</span>
+                  <MessageCircle className="w-6 h-6 text-cyan-400" style={{ marginRight: '16px' }} />
                 </h2>
                 <p className="text-sm text-cyan-400/80 mt-1 tracking-wider">Neural language processing enabled</p>
               </div>
@@ -368,13 +380,14 @@ function App() {
                             <button
                               key={action.id}
                               onClick={() => handleActionClick(action.id)}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold tracking-widest transition-all duration-200 ${
+                              className={`w-full text-left rounded-lg text-sm font-bold tracking-widest transition-all duration-200 ${
                                 action.type === 'primary' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border border-cyan-500/50 shadow-lg shadow-cyan-500/25' :
                                 action.type === 'danger' ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-red-500/50 shadow-lg shadow-red-500/25' :
                                 'bg-gray-700 hover:bg-gray-600 text-cyan-100 border border-gray-600/50'
                               }`}
+                              style={{ height: '40px', paddingLeft: '12px' }}
                             >
-                              {action.label}
+                              <span style={{ marginLeft: '4px' }}>{action.label}</span>
                             </button>
                           ))}
                         </div>
@@ -419,22 +432,32 @@ function App() {
                 </div>
               )}
 
-              {/* Input with Blinking Cursor */}
+              {/* Dynamic Input with Cursor Positioning */}
               <div className="p-6 border-t border-cyan-500/20 bg-gradient-to-r from-gray-900/30 to-gray-800/30">
                 <div className="flex space-x-3">
                   <div className="flex-1 relative">
                     <input
+                      ref={inputRef}
                       type="text"
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
                       placeholder="Enter command or query..."
-                      className="w-full px-4 py-3 bg-gray-900/50 border border-cyan-500/30 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none text-cyan-100 placeholder-cyan-400/50 backdrop-blur-sm pr-4"
+                      className="w-full px-4 py-3 bg-gray-900/50 border border-cyan-500/30 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none text-cyan-100 placeholder-cyan-400/50 backdrop-blur-sm"
                       disabled={isTyping || actionInProgress !== null}
+                      style={{ 
+                        fontFamily: 'monospace',
+                        caretColor: 'transparent' // Hide default cursor
+                      }}
                     />
-                    {/* Blinking cursor positioned at the end of input */}
-                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <BlinkingCursor />
+                    {/* Dynamic cursor positioned after last character */}
+                    <div 
+                      className="absolute top-1/2 transform -translate-y-1/2 pointer-events-none"
+                      style={{ 
+                        left: `${16 + (inputValue.length * 9.6)}px` // 16px padding + character width
+                      }}
+                    >
+                      <DynamicBlinkingCursor inputValue={inputValue} />
                     </div>
                   </div>
                   <button
